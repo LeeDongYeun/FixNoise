@@ -57,6 +57,8 @@ def setup_training_loop_kwargs(
     # Transfer learning.
     resume     = None, # Load previous network: 'noresume' (default), 'ffhq256', 'ffhq512', 'ffhq1024', 'celebahq256', 'lsundog256', <file>, <url>
     freezed    = None, # Freeze-D: <int>, default = 0 discriminator layers
+    freezeg    = None, # Freeze-G: <int>, default = 0 synthesis network layers
+    freezefc   = None, # Freeze-FC: <bool>, default = False mapping network
 
     # Performance options (not included in desc).
     fp32       = None, # Disable mixed-precision training: <bool>, default = False
@@ -286,9 +288,9 @@ def setup_training_loop_kwargs(
     if aug != 'noaug':
         args.augment_kwargs = dnnlib.EasyDict(class_name='training.augment.AugmentPipe', **augpipe_specs[augpipe])
 
-    # ----------------------------------
-    # Transfer learning: resume, freezed
-    # ----------------------------------
+    # -----------------------------------------------------
+    # Transfer learning: resume, freezed, freezeg, freezefc
+    # -----------------------------------------------------
 
     resume_specs = {
         'ffhq256':     'https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/transfer-learning-source-nets/ffhq-res256-mirror-paper256-noaug.pkl',
@@ -318,8 +320,21 @@ def setup_training_loop_kwargs(
         assert isinstance(freezed, int)
         if not freezed >= 0:
             raise UserError('--freezed must be non-negative')
-        desc += f'-freezed{freezed:d}'
+        desc += f'-freezeD{freezed:d}'
         args.D_kwargs.block_kwargs.freeze_layers = freezed
+
+    if freezeg is not None:
+        assert isinstance(freezeg, int)
+        if not freezeg >= 0:
+            raise UserError('--freezeg must be non-negative')
+        desc += f'-freezeG{freezeg:d}'
+        args.G_kwargs.synthesis_kwargs.freeze_layers = freezeg
+    
+    if freezefc is not None:
+        assert isinstance(freezefc, bool)
+        desc += f'-freezeFC{freezefc:d}'
+        args.G_kwargs.mapping_kwargs.freeze_layers = freezefc
+        args.loss_kwargs.pl_weight = 0 # disable path length regularization
 
     # -------------------------------------------------
     # Performance options: fp32, nhwc, nobench, workers
@@ -427,6 +442,8 @@ class CommaSeparatedList(click.ParamType):
 # Transfer learning.
 @click.option('--resume', help='Resume training [default: noresume]', metavar='PKL')
 @click.option('--freezed', help='Freeze-D [default: 0 layers]', type=int, metavar='INT')
+@click.option('--freezeg', help='Freeze-G [default: 0 layers]', type=int, metavar='INT')
+@click.option('--freezefc', help='Freeze-FC [default: False]', type=bool, metavar='BOOL')
 
 # Performance options.
 @click.option('--fp32', help='Disable mixed-precision training', type=bool, metavar='BOOL')
