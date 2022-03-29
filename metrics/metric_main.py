@@ -18,6 +18,7 @@ from . import kernel_inception_distance
 from . import precision_recall
 from . import perceptual_path_length
 from . import inception_score
+from . import lpips
 
 #----------------------------------------------------------------------------
 
@@ -150,3 +151,14 @@ def ppl_wend(opts):
     return dict(ppl_wend=ppl)
 
 #----------------------------------------------------------------------------
+# LPIPS metrics
+
+@register_metric
+def lpips2k(opts):
+    dist = lpips.compute_lpips(opts, num_samples=2000, epsilon=1e-4, crop=True, batch_size=16, resume='ffhq')
+    return dict(lpips2k=dist)
+
+@register_metric
+def lpips_church2k(opts):
+    dist = lpips.compute_lpips(opts, num_samples=2000, epsilon=1e-4, crop=False, batch_size=16, resume='church')
+    return dict(lpips2k=dist)
