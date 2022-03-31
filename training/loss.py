@@ -11,6 +11,98 @@ import torch
 from torch_utils import training_stats
 from torch_utils import misc
 from torch_utils.ops import conv2d_gradfix
+from legacy import load_network
+import lpips
+
+resume_specs = {
+        'ffhq256':     'https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/transfer-learning-source-nets/ffhq-res256-mirror-paper256-noaug.pkl',
+        'ffhq512':     'https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/transfer-learning-source-nets/ffhq-res512-mirror-stylegan2-noaug.pkl',
+        'ffhq1024':    'https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/transfer-learning-source-nets/ffhq-res1024-mirror-stylegan2-noaug.pkl',
+        'celebahq256': 'https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/transfer-learning-source-nets/celebahq-res256-mirror-paper256-kimg100000-ada-target0.5.pkl',
+        'lsundog256':  'https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/transfer-learning-source-nets/lsundog-res256-paper256-kimg100000-noaug.pkl',
+        'church256':   'https://nvlabs-fi-cdn.nvidia.com/stylegan2/networks/stylegan2-church-config-f.pkl',
+    }
+
+
+class FMLoss(torch.nn.Module):
+    """
+    Feature matching loss
+    """
+    def __init__(self, 
+                 device, 
+                 G_mapping, 
+                 G_synthesis, 
+                 G_orig_mapping, 
+                 G_orig_synthesis, 
+                 noise_mode='const',
+                 criterion='l2',
+                 feature='feature',
+                 **kwargs):
+        super().__init__()
+        assert criterion in ['l2']
+        assert feature in ['feature', 'rgb', 'image', 'all', 'vgg']
+
+        self.device = device
+        self.G_mapping = G_mapping
+        self.G_synthesis = G_synthesis
+        self.G_orig_mapping = G_orig_mapping
+        self.G_orig_synthesis = G_orig_synthesis
+
+        self.criterion = criterion
+        self.feature = feature
+        self.noise_mode = noise_mode
+
+        if self.feature == 'vgg':
+            self.vgg16 = lpips.LPIPS(net='vgg').net.to(device)
+
+    def _select_features(self, img, block_features, block_rgbs):
+        if self.feature == 'feature':
+            features = block_features
+        elif self.feature == 'image':
+            features = [img]
+        elif self.feature == 'rgb':
+            features = block_rgbs
+        elif self.feature == 'all':
+            features = block_features + block_rgbs + [img]
+        elif self.feature == 'vgg':
+            features = self.vgg16(img)
+        else:
+            NotImplementedError
+        return features
+
+    def forward(self, z, c, sync):
+        # Generate W space latent
+        with misc.ddp_sync(self.G_mapping, sync):
+            ws = self.G_mapping(z, c)
+            ws_orig = self.G_orig_mapping(z, c)
+
+        # Get block features and rgbs
+        with misc.ddp_sync(self.G_synthesis, sync):
+            img, block_features, block_rgbs = self.G_synthesis(ws, return_features=True, noise_mode=self.noise_mode)
+            img_orig, block_features_orig, block_rgbs_orig = self.G_orig_synthesis(ws_orig, return_features=True, noise_mode=self.noise_mode)
+          
+        # set target features
+        features = self._select_features(img, block_features, block_rgbs)
+        features_orig = self._select_features(img_orig, block_features_orig, block_rgbs_orig)
+
+        # Calculate distance between feature level difference
+        dists = 0
+        for f, f_orig in zip(features, features_orig):
+            f = f.to(torch.float32)
+            f_orig = f_orig.to(torch.float32)
+
+            dist = (f - f_orig)**2
+            
+            # channelwise sum -> spatial average
+            dist = dist.sum(dim=1)
+            _shape = dist.shape
+            dist = torch.mean(dist[~dist.isnan()].reshape(_shape), dim=[1,2])
+
+            dists += dist
+        dists = dists / len(features)
+
+        ddp_trigger = img[0,0,0,0] * 0
+        return torch.mean(dists[~dists.isnan()]) + ddp_trigger
 
 #----------------------------------------------------------------------------
 
@@ -21,7 +113,7 @@ class Loss:
 #----------------------------------------------------------------------------
 
 class StyleGAN2Loss(Loss):
-    def __init__(self, device, G_mapping, G_synthesis, D, augment_pipe=None, style_mixing_prob=0.9, r1_gamma=10, pl_batch_shrink=2, pl_decay=0.01, pl_weight=2):
+    def __init__(self, device, G_mapping, G_synthesis, D, augment_pipe=None, style_mixing_prob=0.9, r1_gamma=10, pl_batch_shrink=2, pl_decay=0.01, pl_weight=2, fm_kwargs={}):
         super().__init__()
         self.device = device
         self.G_mapping = G_mapping
@@ -34,6 +126,23 @@ class StyleGAN2Loss(Loss):
         self.pl_decay = pl_decay
         self.pl_weight = pl_weight
         self.pl_mean = torch.zeros([], device=device)
+        self.fm_weight = fm_kwargs.weight
+        
+        if self.fm_weight != 0:
+            if self.G_synthesis.__class__.__name__ == 'DistributedDataParallel':
+                img_resolution = self.G_synthesis.module.img_resolution
+                img_channels = self.G_synthesis.module.img_channels
+                c_dim = self.G_mapping.module.c_dim
+            else:
+                img_resolution = self.G_synthesis.img_resolution
+                img_channels = self.G_synthesis.img_channels
+                c_dim = self.G_mapping.c_dim
+            
+            orig_pkl = resume_specs[fm_kwargs.resume]
+            G_orig = load_network(fm_kwargs.cfg, orig_pkl, img_resolution, img_channels, c_dim).to(device)
+            self.G_orig_synthesis = G_orig.synthesis
+            self.G_orig_mapping = G_orig.mapping
+            self.FMLoss = FMLoss(device, G_mapping, G_synthesis, self.G_orig_mapping, self.G_orig_synthesis, **fm_kwargs)
 
     def run_G(self, z, c, sync):
         with misc.ddp_sync(self.G_mapping, sync):
@@ -60,6 +169,7 @@ class StyleGAN2Loss(Loss):
         do_Dmain = (phase in ['Dmain', 'Dboth'])
         do_Gpl   = (phase in ['Greg', 'Gboth']) and (self.pl_weight != 0)
         do_Dr1   = (phase in ['Dreg', 'Dboth']) and (self.r1_gamma != 0)
+        do_fm = self.fm_weight != 0
 
         # Gmain: Maximize logits for generated images.
         if do_Gmain:
@@ -72,6 +182,14 @@ class StyleGAN2Loss(Loss):
                 training_stats.report('Loss/G/loss', loss_Gmain)
             with torch.autograd.profiler.record_function('Gmain_backward'):
                 loss_Gmain.mean().mul(gain).backward()
+            
+            if do_fm:
+                with torch.autograd.profiler.record_function('Gfm_forward'):
+                    loss_Gfm = self.FMLoss(gen_z, gen_c, sync=(sync and not do_Gpl))
+                    training_stats.report('Loss/G/fm', loss_Gfm)
+                    loss_Gfm *= self.fm_weight
+                with torch.autograd.profiler.record_function('Gfm_backward'):
+                    loss_Gfm.mul(gain).backward()
 
         # Gpl: Apply path length regularization.
         if do_Gpl:

@@ -33,6 +33,8 @@ def setup_training_loop_kwargs(
     # General options (not included in desc).
     gpus       = None, # Number of GPUs: <int>, default = 1 gpu
     snap       = None, # Snapshot interval: <int>, default = 50 ticks
+    image_snap = None, # Image Snapshot interval: <int>, default = 50 ticks
+    eval_start  = None,  # Evaluation start ticks: <int>, default = 0 ticks
     metrics    = None, # List of metric names: [], ['fid50k_full'] (default), ...
     seed       = None, # Random seed: <int>, default = 0
 
@@ -66,6 +68,12 @@ def setup_training_loop_kwargs(
     allow_tf32 = None, # Allow PyTorch to use TF32 for matmul and convolutions: <bool>, default = False
     nobench    = None, # Disable cuDNN benchmarking: <bool>, default = False
     workers    = None, # Override number of DataLoader workers: <int>, default = 3
+
+    # FM loss options.
+    fm          = None, # Override feature matching loss weight: <float>
+    noise_mode  = None, # Override FMLoss noise mode for network forwarding
+    criterion   = None, # Override FMLoss criterion: 'l2' (default), 'cossim'
+    feature     = None, # Override FMLoss target feature: 'feature' (default), 'rgb', 'all'
 ):
     args = dnnlib.EasyDict()
 
@@ -85,8 +93,22 @@ def setup_training_loop_kwargs(
     assert isinstance(snap, int)
     if snap < 1:
         raise UserError('--snap must be at least 1')
-    args.image_snapshot_ticks = snap
+    
+    if image_snap is None:
+        image_snap = snap
+    assert isinstance(image_snap, int)
+    if image_snap < 1:
+        raise UserError('--image_snap must be at least 1')
+    
+    if eval_start is None:
+        eval_start = 0
+    assert isinstance(eval_start, int)
+    if eval_start < 0:
+        raise UserError('--eval_start must be at least 0')
+
+    args.image_snapshot_ticks = image_snap
     args.network_snapshot_ticks = snap
+    args.eval_start_ticks = eval_start
 
     if metrics is None:
         metrics = ['fid50k_full']
@@ -205,6 +227,26 @@ def setup_training_loop_kwargs(
             raise UserError('--gamma must be non-negative')
         desc += f'-gamma{gamma:g}'
         args.loss_kwargs.r1_gamma = gamma
+
+    args.loss_kwargs.fm_kwargs = dnnlib.EasyDict(weight=0, cfg=cfg, resume=resume)
+
+    if fm is not None:
+        assert isinstance(fm, float)
+        if not fm >= 0:
+            raise UserError('--fm weight must be non-negative')
+        desc += f'-fm{fm:g}'
+        args.loss_kwargs.fm_kwargs.weight = fm
+
+    # FM options
+    if noise_mode is not None:
+        desc += f'-noise{noise_mode}'
+        args.loss_kwargs.fm_kwargs.noise_mode = noise_mode
+    if criterion is not None:
+        desc += f'-{criterion}'
+        args.loss_kwargs.fm_kwargs.criterion = criterion
+    if feature is not None:
+        desc += f'-{feature}'
+        args.loss_kwargs.fm_kwargs.feature = feature
 
     if kimg is not None:
         assert isinstance(kimg, int)
@@ -451,6 +493,14 @@ class CommaSeparatedList(click.ParamType):
 @click.option('--nobench', help='Disable cuDNN benchmarking', type=bool, metavar='BOOL')
 @click.option('--allow-tf32', help='Allow PyTorch to use TF32 internally', type=bool, metavar='BOOL')
 @click.option('--workers', help='Override number of DataLoader workers', type=int, metavar='INT')
+
+@click.option('--eval_start', help='Evaluation start ticks [default: 0 ticks]', type=int)
+# FM options.
+@click.option('--fm', help='Override feature matching loss weight', type=float)
+@click.option('--noise_mode', help='Override noise mode for network forward', type=str)
+@click.option('--criterion', help='Override style attribute map criterion', type=str)
+@click.option('--feature', help='Override style attribute map target feature')
+
 
 def main(ctx, outdir, dry_run, **config_kwargs):
     """Train a GAN using the techniques described in the paper

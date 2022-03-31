@@ -28,8 +28,10 @@ from metrics import metric_main
 
 def setup_snapshot_image_grid(training_set, random_seed=0):
     rnd = np.random.RandomState(random_seed)
-    gw = np.clip(7680 // training_set.image_shape[2], 7, 32)
-    gh = np.clip(4320 // training_set.image_shape[1], 4, 32)
+    gw = np.clip((7680//2) // training_set.image_shape[2], 7, 32)
+    gh = np.clip((4320//2) // training_set.image_shape[1], 4, 32)
+    # gw = np.clip(7680 // training_set.image_shape[2], 7, 32)
+    # gh = np.clip(4320 // training_set.image_shape[1], 4, 32)
 
     # No labels => show random subset of training samples.
     if not training_set.has_labels:
@@ -113,6 +115,7 @@ def training_loop(
     kimg_per_tick           = 4,        # Progress snapshot interval.
     image_snapshot_ticks    = 50,       # How often to save image snapshots? None = disable.
     network_snapshot_ticks  = 50,       # How often to save network snapshots? None = disable.
+    eval_start_ticks        = 0,        # When to start evaluation?
     resume_pkl              = None,     # Network pickle to resume training from.
     cudnn_benchmark         = True,     # Enable torch.backends.cudnn.benchmark?
     allow_tf32              = False,    # Enable torch.backends.cuda.matmul.allow_tf32 and torch.backends.cudnn.allow_tf32?
@@ -375,7 +378,7 @@ def training_loop(
                     pickle.dump(snapshot_data, f)
 
         # Evaluate metrics.
-        if (snapshot_data is not None) and (len(metrics) > 0):
+        if (snapshot_data is not None) and (len(metrics) > 0) and (cur_tick >= eval_start_ticks):
             if rank == 0:
                 print('Evaluating metrics...')
             for metric in metrics:

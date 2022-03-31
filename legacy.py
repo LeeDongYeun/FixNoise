@@ -17,6 +17,39 @@ from torch_utils import misc
 
 #----------------------------------------------------------------------------
 
+def load_network(cfg, network_pkl, img_resolution, img_channels, c_dim):
+    # Construct model arguments
+    cfg_specs = {
+        'stylegan2': dict(ref_gpus=8,  kimg=25000,  mb=32, mbstd=4,  fmaps=1,   lrate=0.002,  gamma=10,   ema=10,  ramp=None, map=8), # Uses mixed-precision, unlike the original StyleGAN2.
+        'paper256':  dict(ref_gpus=8,  kimg=25000,  mb=64, mbstd=8,  fmaps=0.5, lrate=0.0025, gamma=1,    ema=20,  ramp=None, map=8),
+        'paper512':  dict(ref_gpus=8,  kimg=25000,  mb=64, mbstd=8,  fmaps=1,   lrate=0.0025, gamma=0.5,  ema=20,  ramp=None, map=8),
+        'paper1024': dict(ref_gpus=8,  kimg=25000,  mb=32, mbstd=4,  fmaps=1,   lrate=0.002,  gamma=2,    ema=10,  ramp=None, map=8),
+        'cifar':     dict(ref_gpus=2,  kimg=100000, mb=64, mbstd=32, fmaps=1,   lrate=0.0025, gamma=0.01, ema=500, ramp=0.05, map=2),
+    }
+    spec = dnnlib.EasyDict(cfg_specs[cfg])
+    # spec.fmaps = 1 if img_resolution >= 512 else 0.5
+
+    G_kwargs = dnnlib.EasyDict(class_name='training.networks.Generator', z_dim=512, w_dim=512, mapping_kwargs=dnnlib.EasyDict(), synthesis_kwargs=dnnlib.EasyDict())
+    G_kwargs.synthesis_kwargs.channel_base = int(spec.fmaps * 32768)
+    G_kwargs.synthesis_kwargs.channel_max = 512
+    G_kwargs.mapping_kwargs.num_layers = spec.map
+    G_kwargs.synthesis_kwargs.num_fp16_res = 4 # enable mixed-precision training
+    G_kwargs.synthesis_kwargs.conv_clamp  = 256
+
+    # Construct model
+    common_kwargs = dict(c_dim=c_dim, img_resolution=img_resolution, img_channels=img_channels)
+    G = dnnlib.util.construct_class_by_name(**G_kwargs, **common_kwargs).eval().requires_grad_(False)
+
+    # Load pretrained weights
+    print(f'Loading networks from "{network_pkl}"')
+    with dnnlib.util.open_url(network_pkl) as f:
+        pretrained_data = load_network_pkl(f)['G_ema']
+    misc.copy_params_and_buffers(pretrained_data, G, require_all=False)
+
+    return G
+
+#----------------------------------------------------------------------------
+
 def load_network_pkl(f, force_fp16=False):
     data = _LegacyUnpickler(f).load()
 
