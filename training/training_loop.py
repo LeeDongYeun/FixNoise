@@ -196,7 +196,7 @@ def training_loop(
     phases = []
     for name, module, opt_kwargs, reg_interval in [('G', G, G_opt_kwargs, G_reg_interval), ('D', D, D_opt_kwargs, D_reg_interval)]:
         if reg_interval is None:
-            if hasattr(module, 'mapping') and getattr(G_kwargs.mapping_kwargs.freeze_layers, False):
+            if hasattr(module, 'mapping') and getattr(G_kwargs.mapping_kwargs, 'freeze_layers', False):
                 print('Freeze FC')
                 opt = dnnlib.util.construct_class_by_name(module.synthesis.parameters(), **opt_kwargs) # subclass of torch.optim.Optimizer
             else:
@@ -207,7 +207,7 @@ def training_loop(
             opt_kwargs = dnnlib.EasyDict(opt_kwargs)
             opt_kwargs.lr = opt_kwargs.lr * mb_ratio
             opt_kwargs.betas = [beta ** mb_ratio for beta in opt_kwargs.betas]
-            if hasattr(module, 'mapping') and getattr(G_kwargs.mapping_kwargs.freeze_layers, False):
+            if hasattr(module, 'mapping') and getattr(G_kwargs.mapping_kwargs, 'freeze_layers', False):
                 print('Freeze FC')
                 opt = dnnlib.util.construct_class_by_name(module.synthesis.parameters(), **opt_kwargs) # subclass of torch.optim.Optimizer
             else:

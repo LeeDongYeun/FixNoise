@@ -298,6 +298,7 @@ def setup_training_loop_kwargs(
         'ffhq1024':    'https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/transfer-learning-source-nets/ffhq-res1024-mirror-stylegan2-noaug.pkl',
         'celebahq256': 'https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/transfer-learning-source-nets/celebahq-res256-mirror-paper256-kimg100000-ada-target0.5.pkl',
         'lsundog256':  'https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/transfer-learning-source-nets/lsundog-res256-paper256-kimg100000-noaug.pkl',
+        'church256':   'https://nvlabs-fi-cdn.nvidia.com/stylegan2/networks/stylegan2-church-config-f.pkl',
     }
 
     assert resume is None or isinstance(resume, str)
@@ -330,9 +331,8 @@ def setup_training_loop_kwargs(
         desc += f'-freezeG{freezeg:d}'
         args.G_kwargs.synthesis_kwargs.freeze_layers = freezeg
     
-    if freezefc is not None:
-        assert isinstance(freezefc, bool)
-        desc += f'-freezeFC{freezefc:d}'
+    if freezefc == True:
+        desc += f'-freezeFC'
         args.G_kwargs.mapping_kwargs.freeze_layers = freezefc
         args.loss_kwargs.pl_weight = 0 # disable path length regularization
 
