@@ -1,0 +1,12 @@
+python train.py --outdir=./logs/wikiart/ \
+                --gpus=2 \
+                --batch=64 \
+                --kimg=5000 \
+                --snap=10 \
+                --data=.data/wikiart_cityscape/images256x256/ \
+                --mirror=True \
+                --cfg=stylegan2 \
+                --resume=church256 \
+                --workers=2 \
+                --fm=0.05 \
+                --metrics=fid50k_full
