@@ -298,17 +298,19 @@ class SynthesisLayer(torch.nn.Module):
             self.weight = torch.nn.Parameter(weight)
             if use_noise:
                 self.register_buffer('noise_const', torch.randn([resolution, resolution]))
+                self.register_buffer('noise_rand', torch.randn([resolution, resolution]))
                 self.noise_strength = torch.nn.Parameter(noise_strength)
             self.bias = torch.nn.Parameter(bias)
         else:
             self.register_buffer('weight', weight)
             if use_noise:
                 self.register_buffer('noise_const', torch.randn([resolution, resolution]))
+                self.register_buffer('noise_rand', torch.randn([resolution, resolution]))
                 self.register_buffer('noise_strength', noise_strength)
             self.register_buffer('bias', bias)
 
-    def forward(self, x, w, noise_mode='random', fused_modconv=True, gain=1):
-        assert noise_mode in ['random', 'const', 'none']
+    def forward(self, x, w, noise_mode='random', fused_modconv=True, gain=1, blend_weight=0.5):
+        assert noise_mode in ['random', 'const', 'none', 'interpolate']
         in_resolution = self.resolution // self.up
         misc.assert_shape(x, [None, self.weight.shape[1], in_resolution, in_resolution])
         styles = self.affine(w)
@@ -318,6 +320,8 @@ class SynthesisLayer(torch.nn.Module):
             noise = torch.randn([x.shape[0], 1, self.resolution, self.resolution], device=x.device) * self.noise_strength
         if self.use_noise and noise_mode == 'const':
             noise = self.noise_const * self.noise_strength
+        if self.use_noise and noise_mode == 'interpolate':
+            noise = torch.lerp(self.noise_const, self.noise_rand, blend_weight) * self.noise_strength
 
         flip_weight = (self.up == 1) # slightly faster
         x = modulated_conv2d(x=x, weight=self.weight, styles=styles, noise=noise, up=self.up,
@@ -327,6 +331,9 @@ class SynthesisLayer(torch.nn.Module):
         act_clamp = self.conv_clamp * gain if self.conv_clamp is not None else None
         x = bias_act.bias_act(x, self.bias.to(x.dtype), act=self.activation, gain=act_gain, clamp=act_clamp)
         return x
+    
+    def sample_noise(self):
+        self.noise_rand[:] = torch.randn([self.resolution, self.resolution])
 
 #----------------------------------------------------------------------------
 
@@ -466,6 +473,13 @@ class SynthesisBlock(torch.nn.Module):
         assert x.dtype == dtype
         assert img is None or img.dtype == torch.float32
         return x, img
+    
+    def sample_noise(self):
+        if self.in_channels == 0:
+            self.conv1.sample_noise()
+        else:
+            self.conv0.sample_noise()
+            self.conv1.sample_noise()
 
 #----------------------------------------------------------------------------
 
@@ -531,6 +545,11 @@ class SynthesisNetwork(torch.nn.Module):
         else:
             return img
 
+    def sample_noise(self):
+        for res in self.block_resolutions:
+                block = getattr(self, f'b{res}')
+                block.sample_noise()
+
 #----------------------------------------------------------------------------
 
 @persistence.persistent_class
@@ -563,6 +582,9 @@ class Generator(torch.nn.Module):
         else:
             img = self.synthesis(ws, **synthesis_kwargs)
             return img
+    
+    def sample_noise(self):
+        self.synthesis.sample_noise()
 
 #----------------------------------------------------------------------------
 
