@@ -51,16 +51,39 @@ python dataset_resize.py --source data/wikiart_cityscape/images --dest data/wiki
 ## Train new networks using FixNoise
 Using FixNoise, base command for training stylegan2-ada network as follows:
 
-**MetFaces**
+**FFHQ &rarr; MetFaces**
 ```bash
 python train.py --outdir=${OUTDIR} --data=${DATADIR} --cfg=paper256 --resume=ffhq256 --fm=0.05
 ```
-**AAHQ**
+**FFHQ &rarr; AAHQ**
 ```bash
 python train.py --outdir=${OUTDIR} --data=${DATADIR} --cfg=paper256 --resume=ffhq256 --fm=0.05
 ```
-**Wikiart Cityscape**
+**Church &rarr; Cityscape**
 ```bash
 python train.py --outdir=${OUTDIR} --data=${DATADIR} --cfg=stylegan2 --resume=church256 --fm=0.05
 ```
 Additionally, we provide detailed [training scripts](./scripts/) used in our experiments.
+
+## Demo
+We provide noise interpolation example code in [jupyter notebook](./demo.ipynb).
+
+#### FFHQ &rarr; MetFaces
+<img src="./docs/interpolation_video/metfaces/noise_interpolation_metfaces00.gif"> &nbsp; <img src="./docs/interpolation_video/metfaces/noise_interpolation_metfaces01.gif"> \
+<img src="./docs/interpolation_video/metfaces/noise_interpolation_metfaces02.gif"> &nbsp; <img src="./docs/interpolation_video/metfaces/noise_interpolation_metfaces03.gif"> \
+
+#### FFHQ &rarr; AAHQ
+<img src="./docs/interpolation_video/aahq/noise_interpolation_aahq00.gif"> &nbsp; <img src="./docs/interpolation_video/aahq/noise_interpolation_aahq01.gif"> \
+<img src="./docs/interpolation_video/aahq/noise_interpolation_aahq02.gif"> &nbsp; <img src="./docs/interpolation_video/aahq/noise_interpolation_aahq03.gif"> \
+
+#### Church &rarr; Cityscape
+<img src="./docs/interpolation_video/cityscape/noise_interpolation_cityscape00.gif"> &nbsp; <img src="./docs/interpolation_video/cityscape/noise_interpolation_cityscape01.gif"> \
+<img src="./docs/interpolation_video/cityscape/noise_interpolation_cityscape02.gif"> &nbsp; <img src="./docs/interpolation_video/cityscape/noise_interpolation_cityscape03.gif"> \
+
+## Citation
+```
+
+```
+
+## License
+The majority of FixNoise is licensed under [CC-BY-NC](https://creativecommons.org/licenses/by-nc/4.0/), however, portions of this project are available under a separate license terms: all codes used or modified from [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch) is under the [Nvidia Source Code License](https://nvlabs.github.io/stylegan2-ada-pytorch/license.html).
