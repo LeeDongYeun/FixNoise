@@ -1,10 +1,13 @@
 import os
 import click
+import numpy as np
 from PIL import Image
 
 IMG_EXTENSIONS = [
-    '.jpg', '.JPG', '.jpeg', '.JPEG',
-    '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP', '.tiff'
+    'jpg', 'jpeg', 'png', 'ppm', 'bmp',
+    'pgm', 'tif', 'tiff', 'webp',
+    'JPG', 'JPEG', 'PNG', 'PPM', 'BMP',
+    'PGM', 'TIF', 'TIFF', 'WEBP'
 ]
 
 
@@ -28,7 +31,8 @@ def make_dataset(dir):
 @click.option('--dest', help='Output directory for output dataset', required=True, metavar='PATH')
 @click.option('--width', help='Output width', default=256, type=int)
 @click.option('--height', help='Output height', default=256, type=int)
-def resize_dataset(ctx, source, dest, width, height):
+@click.option('--crop', help='Whether to crop or not', default=False, type=bool)
+def resize_dataset(ctx, source, dest, width, height, crop):
     """Resize dataset
     Ex)
         --source data/metfaces/images
@@ -47,7 +51,11 @@ def resize_dataset(ctx, source, dest, width, height):
     print(len(image_paths))
     i = 0
     for img_path in image_paths:
-        img = Image.open(img_path)
+        img = np.array(Image.open(img_path))
+        if crop:
+            crop_size = np.min(img.shape[:2])
+            img = img[(img.shape[0] - crop_size) // 2 : (img.shape[0] + crop_size) // 2, (img.shape[1] - crop_size) // 2 : (img.shape[1] + crop_size) // 2]
+        img = Image.fromarray(img, 'RGB')
         img = img.resize((width, height), Image.BILINEAR)
 
         img_name = img_path.split('/')[-1]

@@ -3,6 +3,7 @@
 ![Teaser image](./docs/figure_1.png)
 **Fix the Noise: Disentangling Source Feature for Transfer Learning of StyleGAN**<br>
 Dongyeun Lee, Jae Young Lee, Doyeon Kim, Jaehyun Choi, Junmo Kim<br>
+https://arxiv.org/abs/2204.14079
 
 >**Abstract**: 
 *Transfer learning of StyleGAN has recently shown great potential to solve diverse tasks, especially in domain translation. Previous methods utilized a source model by swapping or freezing weights during transfer learning, however, they have limitations on visual quality and controlling source features. In other words, they require additional models that are computationally demanding and have restricted control steps that prevent a smooth transition. In this paper, we propose a new approach to overcome these limitations. Instead of swapping or freezing, we introduce a simple feature matching loss to improve generation quality. In addition, to control the degree of source features, we train a target model with the proposed strategy, FixNoise, to preserve the source features only in a disentangled subspace of a target feature space. Owing to the disentangled feature space, our method can smoothly control the degree of the source features in a single model. Extensive experiments demonstrate that the proposed method can generate more consistent and realistic images than previous works.*
@@ -82,7 +83,12 @@ We provide noise interpolation example code in [jupyter notebook](./demo.ipynb).
 
 ## Citation
 ```
-
+@article{lee2022fix,
+  title={Fix the Noise: Disentangling Source Feature for Transfer Learning of StyleGAN},
+  author={Lee, Dongyeun and Lee, Jae Young and Kim, Doyeon and Choi, Jaehyun and Kim, Junmo},
+  journal={arXiv preprint arXiv:2204.14079},
+  year={2022}
+}
 ```
 
 ## License

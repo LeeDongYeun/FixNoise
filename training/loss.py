@@ -40,7 +40,7 @@ class FMLoss(torch.nn.Module):
                  **kwargs):
         super().__init__()
         assert criterion in ['l2']
-        assert feature in ['feature', 'rgb', 'image', 'all', 'vgg']
+        assert feature in ['feature', 'rgb', 'image', 'all']
 
         self.device = device
         self.G_mapping = G_mapping
@@ -52,9 +52,6 @@ class FMLoss(torch.nn.Module):
         self.feature = feature
         self.noise_mode = noise_mode
 
-        if self.feature == 'vgg':
-            self.vgg16 = lpips.LPIPS(net='vgg').net.to(device)
-
     def _select_features(self, img, block_features, block_rgbs):
         if self.feature == 'feature':
             features = block_features
@@ -64,8 +61,6 @@ class FMLoss(torch.nn.Module):
             features = block_rgbs
         elif self.feature == 'all':
             features = block_features + block_rgbs + [img]
-        elif self.feature == 'vgg':
-            features = self.vgg16(img)
         else:
             NotImplementedError
         return features

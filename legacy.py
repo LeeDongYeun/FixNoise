@@ -232,6 +232,7 @@ def convert_tf_generator(tf_G):
         r'synthesis\.b(\d+)\.torgb\.affine\.bias',          lambda r:   tf_params[f'synthesis/{r}x{r}/ToRGB/mod_bias'] + 1,
         r'synthesis\.b(\d+)\.skip\.weight',                 lambda r:   tf_params[f'synthesis/{r}x{r}/Skip/weight'][::-1, ::-1].transpose(3, 2, 0, 1),
         r'.*\.resample_filter',                             None,
+        r'.*\.noise_rand',                                  None,
     )
     return G
 
