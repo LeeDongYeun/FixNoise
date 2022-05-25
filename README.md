@@ -70,16 +70,16 @@ Additionally, we provide detailed [training scripts](./scripts/) used in our exp
 We provide noise interpolation example code in [jupyter notebook](./demo.ipynb).
 
 #### FFHQ &rarr; MetFaces
-<img src="./docs/interpolation_video/metfaces/noise_interpolation_metfaces00.gif" width="48%"> &nbsp; <img src="./docs/interpolation_video/metfaces/noise_interpolation_metfaces01.gif" width="48%"> \
-<img src="./docs/interpolation_video/metfaces/noise_interpolation_metfaces02.gif" width="48%"> &nbsp; <img src="./docs/interpolation_video/metfaces/noise_interpolation_metfaces03.gif" width="48%"> 
+<img src="./docs/interpolation_video/metfaces/noise_interpolation_metfaces00.gif" width="45%"> &nbsp; <img src="./docs/interpolation_video/metfaces/noise_interpolation_metfaces01.gif" width="45%"> \
+<img src="./docs/interpolation_video/metfaces/noise_interpolation_metfaces02.gif" width="45%"> &nbsp; <img src="./docs/interpolation_video/metfaces/noise_interpolation_metfaces03.gif" width="45%"> 
 
 #### FFHQ &rarr; AAHQ
-<img src="./docs/interpolation_video/aahq/noise_interpolation_aahq00.gif" width="48%"> &nbsp; <img src="./docs/interpolation_video/aahq/noise_interpolation_aahq01.gif" width="48%"> \
-<img src="./docs/interpolation_video/aahq/noise_interpolation_aahq02.gif" width="48%"> &nbsp; <img src="./docs/interpolation_video/aahq/noise_interpolation_aahq03.gif" width="48%"> 
+<img src="./docs/interpolation_video/aahq/noise_interpolation_aahq00.gif" width="45%"> &nbsp; <img src="./docs/interpolation_video/aahq/noise_interpolation_aahq01.gif" width="45%"> \
+<img src="./docs/interpolation_video/aahq/noise_interpolation_aahq02.gif" width="45%"> &nbsp; <img src="./docs/interpolation_video/aahq/noise_interpolation_aahq03.gif" width="45%"> 
 
 #### Church &rarr; Cityscape
-<img src="./docs/interpolation_video/cityscape/noise_interpolation_cityscape00.gif" width="48%"> &nbsp; <img src="./docs/interpolation_video/cityscape/noise_interpolation_cityscape01.gif" width="48%"> \
-<img src="./docs/interpolation_video/cityscape/noise_interpolation_cityscape02.gif" width="48%"> &nbsp; <img src="./docs/interpolation_video/cityscape/noise_interpolation_cityscape03.gif" width="48%"> 
+<img src="./docs/interpolation_video/cityscape/noise_interpolation_cityscape00.gif" width="45%"> &nbsp; <img src="./docs/interpolation_video/cityscape/noise_interpolation_cityscape01.gif" width="45%"> \
+<img src="./docs/interpolation_video/cityscape/noise_interpolation_cityscape02.gif" width="45%"> &nbsp; <img src="./docs/interpolation_video/cityscape/noise_interpolation_cityscape03.gif" width="45%"> 
 
 ## Citation
 ```
