@@ -1,8 +1,8 @@
-# Fix the Noise: Disentangling Source Feature for Transfer Learning of StyleGAN</sub>
+# Fix the Noise: Disentangling Source Feature for Controllable Domain Translation</sub>
 
 ![Teaser image](./docs/figure_1.png)
-**Fix the Noise: Disentangling Source Feature for Transfer Learning of StyleGAN**<br>
-Dongyeun Lee, Jae Young Lee, Doyeon Kim, Jaehyun Choi, Junmo Kim<br>
+**Fix the Noise: Disentangling Source Feature for Controllable Domain Translation**<br>
+Dongyeun Lee, Jae Young Lee, Doyeon Kim, Jaehyun Choi, Jaejun Yoo, Junmo Kim<br>
 https://arxiv.org/abs/2303.11545
 
 >**Abstract**: 
@@ -83,12 +83,13 @@ We provide noise interpolation example code in [jupyter notebook](./demo.ipynb).
 
 ## Citation
 ```
-@article{lee2022fix,
-  title={Fix the Noise: Disentangling Source Feature for Transfer Learning of StyleGAN},
-  author={Lee, Dongyeun and Lee, Jae Young and Kim, Doyeon and Choi, Jaehyun and Kim, Junmo},
-  journal={arXiv preprint arXiv:2204.14079},
-  year={2022}
+@inproceedings{lee2023fix,
+  title   =   {Fix the Noise: Disentangling Source Feature for Controllable Domain Translation},
+  author  =   {Lee, Dongyeun and Lee, Jae Young and Kim, Doyeon and Choi, Jaehyun and Yoo, Jaejun and Kim, Junmo},
+  journal =   {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  year    =   {2023}
 }
+
 ```
 
 ## License
