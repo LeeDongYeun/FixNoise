@@ -1,5 +1,8 @@
 # Fix the Noise: Disentangling Source Feature for Controllable Domain Translation</sub>
 
+[![arXiv](https://img.shields.io/badge/arXiv-2303.11545-b31b1b.svg)](https://arxiv.org/abs/2303.11545)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/LeeDongYeun/FixNoise/blob/main/demo_colab.ipynb)
+
 ![Teaser image](./docs/figure_1.png)
 **Fix the Noise: Disentangling Source Feature for Controllable Domain Translation**<br>
 Dongyeun Lee, Jae Young Lee, Doyeon Kim, Jaehyun Choi, Jaejun Yoo, Junmo Kim<br>
@@ -7,6 +10,11 @@ https://arxiv.org/abs/2303.11545
 
 >**Abstract**: 
 *Recent studies show strong generative performance in domain translation especially by using transfer learning techniques on the unconditional generator. However, the control between different domain features using a single model is still challenging. Existing methods often require additional models, which is computationally demanding and leads to unsatisfactory visual quality. In addition, they have restricted control steps, which prevents a smooth transition. In this paper, we propose a new approach for high-quality domain translation with better controllability. The key idea is to preserve source features within a disentangled subspace of a target feature space. This allows our method to smoothly control the degree to which it preserves source features while generating images from an entirely new domain using only a single model. Our extensive experiments show that the proposed method can produce more consistent and realistic images than previous works and maintain precise controllability over different levels of transformation.*
+
+## Recent Updates
+* **`2023-05-09`** Add several useful code for inference. For detailed usage, refer to [Inference](#Inference).
+
+* **`2023-05-15`** Add [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/LeeDongYeun/FixNoise/blob/main/demo_colab.ipynb)
 
 ## Requirements
 Our code is highly based on the official implementation of [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch). Please refer to [requirements](https://github.com/NVlabs/stylegan2-ada-pytorch#requirements) for detailed requirements.
@@ -65,6 +73,41 @@ python train.py --outdir=${OUTDIR} --data=${DATADIR} --cfg=paper256 --resume=ffh
 python train.py --outdir=${OUTDIR} --data=${DATADIR} --cfg=stylegan2 --resume=church256 --fm=0.05
 ```
 Additionally, we provide detailed [training scripts](./scripts/) used in our experiments.
+
+## Inference
+### Generate interpolated images
+To generate interpolated images according to different noise, run:
+```bash
+# Generate MetFaces images without truncation
+python generate.py --cfg=paper256 --outdir=out --trunc_psi=1 --seeds=865-1000 \\
+    --network=pretrained/metfaces-fm0.05-001612.pkl
+
+# Generate MetFaces images with truncation
+python generate.py --cfg=paper256 --outdir=out --trunc_psi=0.7 --trunc_cutoff=8 --seeds=865-1000 \\
+    --network=pretrained/metfaces-fm0.05-001612.pkl
+
+# Generate AAHQ images with truncation
+python generate.py --cfg=paper256 --outdir=out --trunc_psi=0.7 --trunc_cutoff=8 --seeds=865-1000 \\
+    --network=pretrained/aahq-fm0.05-010886.pkl
+
+# Generate Wikiart images with truncation
+python generate.py --cfg=stylegan2 --outdir=out --trunc_psi=0.7 --trunc_cutoff=8 --seeds=865-1000 \\
+    --network=pretrained/wikiart-fm0.05-004032.pkl
+```
+You can change interpolation steps by modifying `--interp-step`.
+
+### Projecting images to latent space
+To find the matching latent code for a given image file, run:
+```bash
+python projector_z.py --outdir=${OUTDIR} --target_dir=${DATADIR} \
+    --https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/transfer-learning-source-nets/ffhq-res256-mirror-paper256-noaug.pkl
+```
+We modify [projector.py](https://github.com/NVlabs/stylegan2-ada-pytorch/blob/main/projector.py) to project image to z space of StyleGAN2. To use multiple gpus, add `--gpus` arguments. You can render the resulting latent vector by specifying `--projected-z-dir` for `generate.py`.
+```bash
+# Render an image from projected Z
+python generate.py --cfg=paper256 --outdir=out --trunc_psi=0.7 --trunc_cutoff=8 \\
+    --projected-z-dir=./projected --network=pretrained/aahq-fm0.05-010886.pkl
+```
 
 ## Demo
 We provide noise interpolation example code in [jupyter notebook](./demo.ipynb).
