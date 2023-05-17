@@ -134,7 +134,6 @@ We provide noise interpolation example code in [jupyter notebook](./demo.ipynb).
     year      = {2023},
     pages     = {14224-14234}
 }
-
 ```
 
 ## License
