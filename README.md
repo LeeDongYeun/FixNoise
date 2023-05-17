@@ -126,11 +126,13 @@ We provide noise interpolation example code in [jupyter notebook](./demo.ipynb).
 
 ## Citation
 ```
-@inproceedings{lee2023fix,
-  title   =   {Fix the Noise: Disentangling Source Feature for Controllable Domain Translation},
-  author  =   {Lee, Dongyeun and Lee, Jae Young and Kim, Doyeon and Choi, Jaehyun and Yoo, Jaejun and Kim, Junmo},
-  journal =   {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
-  year    =   {2023}
+@InProceedings{Lee_2023_CVPR,
+    author    = {Lee, Dongyeun and Lee, Jae Young and Kim, Doyeon and Choi, Jaehyun and Yoo, Jaejun and Kim, Junmo},
+    title     = {Fix the Noise: Disentangling Source Feature for Controllable Domain Translation},
+    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month     = {June},
+    year      = {2023},
+    pages     = {14224-14234}
 }
 
 ```
